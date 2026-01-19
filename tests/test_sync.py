@@ -1,0 +1,84 @@
+import pytest
+from datetime import datetime, UTC
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from indexer.models.database import Base
+from indexer.models.orm import Block
+from indexer.models.schemas import BlockModel
+from indexer.sync import IntegrityGuard, ReorgException
+
+@pytest.fixture
+def db_session():
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    yield session
+    session.close()
+
+def create_mock_block_model(number, hash_val, parent_hash):
+    return BlockModel(
+        number=number,
+        hash=hash_val,
+        parent_hash=parent_hash,
+        timestamp=int(datetime.now(UTC).timestamp()),
+        miner="0x" + "0" * 40,
+        difficulty=1,
+        total_difficulty=1,
+        size=1,
+        extra_data="0x",
+        gas_limit=1,
+        gas_used=1
+    )
+
+def test_validate_continuity_success(db_session):
+    prev_hash = "0x" + "a" * 64
+    prev_block = Block(
+        number=100,
+        hash=prev_hash,
+        parent_hash="0x" + "0" * 64,
+        timestamp=datetime.now(UTC),
+        miner="0x" + "0" * 40,
+        difficulty=1,
+        total_difficulty=1,
+        size=1,
+        extra_data="0x",
+        gas_limit=1,
+        gas_used=1
+    )
+    db_session.add(prev_block)
+    db_session.commit()
+
+    guard = IntegrityGuard(db_session)
+    new_block = create_mock_block_model(101, "0x" + "b" * 64, prev_hash)
+    
+    assert guard.validate_block_continuity(new_block) is True
+
+def test_validate_continuity_reorg_detected(db_session):
+    prev_hash = "0x" + "a" * 64
+    prev_block = Block(
+        number=100,
+        hash=prev_hash,
+        parent_hash="0x" + "0" * 64,
+        timestamp=datetime.now(UTC),
+        miner="0x" + "0" * 40,
+        difficulty=1,
+        total_difficulty=1,
+        size=1,
+        extra_data="0x",
+        gas_limit=1,
+        gas_used=1
+    )
+    db_session.add(prev_block)
+    db_session.commit()
+
+    guard = IntegrityGuard(db_session)
+    wrong_parent_hash = "0x" + "f" * 64
+    new_block = create_mock_block_model(101, "0x" + "b" * 64, wrong_parent_hash)
+    
+    with pytest.raises(ReorgException) as excinfo:
+        guard.validate_block_continuity(new_block)
+    
+    assert excinfo.value.block_number == 101
+    assert excinfo.value.expected_parent_hash == prev_hash
+    assert excinfo.value.actual_parent_hash == wrong_parent_hash
