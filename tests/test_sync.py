@@ -1,17 +1,19 @@
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, UTC
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from indexer.models.database import Base
-from indexer.models.repository import BlockchainRepository
-from indexer.models.schemas import BlockModel
-from indexer.sync import IntegrityGuard, ReorgException
+
+from core.sync import IntegrityGuard, ReorgException
+from database.connection import Base
+from database.repository import BlockchainRepository
+from domain.schemas import BlockModel
+
 
 @pytest.fixture
 def db_session():
     engine = create_engine("sqlite:///:memory:")
     # Ensure tables exist
-    from indexer.models.orm import Block, Transaction, Log
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()

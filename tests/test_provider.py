@@ -1,8 +1,11 @@
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import MagicMock, patch
 from web3.exceptions import Web3Exception
-from indexer.provider import BlockchainProvider
-from indexer.config import settings
+
+from core.config import settings
+from core.provider import BlockchainProvider
+
 
 @pytest.fixture
 def provider():

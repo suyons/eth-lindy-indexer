@@ -1,9 +1,12 @@
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, UTC
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from indexer.models.database import Base
-from indexer.models.orm import Block, Transaction, Log
+
+from database.connection import Base
+from database.models import Block, Log, Transaction
+
 
 @pytest.fixture
 def db_session():

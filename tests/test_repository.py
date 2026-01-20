@@ -1,17 +1,19 @@
+from datetime import UTC, datetime
+
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime, UTC
-from indexer.models.database import Base
-from indexer.models.repository import BlockchainRepository
-from indexer.models.schemas import BlockModel
+
+from database.connection import Base
+from database.repository import BlockchainRepository
+from domain.schemas import BlockModel
+
 
 @pytest.fixture
 def db_session():
     engine = create_engine("sqlite:///:memory:")
     # Create tables using the existing ORM definitions for convenience in tests,
     # but the Repository will use Raw SQL to interact with them.
-    from indexer.models.orm import Block, Transaction, Log
     Base.metadata.create_all(engine)
     
     Session = sessionmaker(bind=engine)

@@ -1,14 +1,15 @@
+from datetime import UTC, datetime
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from datetime import datetime, UTC
 
-from indexer.api import app
-from indexer.models.database import Base, get_db
-from indexer.models.repository import BlockchainRepository
-from indexer.models.schemas import BlockModel
+from api.router import app
+from database.connection import Base, get_db
+from database.repository import BlockchainRepository
+from domain.schemas import BlockModel
 
 # Test database setup with StaticPool for in-memory SQLite shared state
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -31,7 +32,7 @@ app.dependency_overrides[get_db] = override_get_db
 @pytest.fixture
 def client():
     # Use existing ORM models to create tables for Raw SQL repository to interact with
-    from indexer.models.orm import Block, Transaction, Log
+    from database.models import Block, Log, Transaction
     Base.metadata.create_all(bind=engine)
     yield TestClient(app)
     Base.metadata.drop_all(bind=engine)
@@ -39,7 +40,7 @@ def client():
 def test_health_check(client):
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "service": "eth-lindy-indexer"}
+    assert response.json() == {"status": "ok", "service": "eth-lindy-indexer-core"}
 
 def test_get_latest_block_empty(client):
     response = client.get("/blocks/latest")

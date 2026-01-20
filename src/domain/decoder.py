@@ -1,9 +1,10 @@
 import logging
 from typing import Any, Dict, List, Optional
+
 from web3 import Web3
 from web3._utils.events import get_event_data
 
-from indexer.models.schemas import TransferEvent
+from domain.schemas import TransferEvent
 
 logger = logging.getLogger(__name__)
 

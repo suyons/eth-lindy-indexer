@@ -1,8 +1,10 @@
 from typing import Generator
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
-from indexer.config import settings
+
+from core.config import settings
 
 # Create engine
 # Note: StaticPool is used here to support SQLite in-memory testing correctly.
@@ -24,6 +26,3 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
-
-def init_db():
-    Base.metadata.create_all(bind=engine)

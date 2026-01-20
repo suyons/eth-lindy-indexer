@@ -12,7 +12,7 @@ from web3 import Web3
 from web3.exceptions import Web3Exception
 from web3.types import BlockData, TxData
 
-from indexer.config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

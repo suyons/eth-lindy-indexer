@@ -1,8 +1,10 @@
 import logging
-from typing import List, Optional
+from typing import Optional
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from indexer.models.schemas import BlockModel, TransactionModel, LogModel, TransferEvent
+
+from domain.schemas import BlockModel, LogModel, TransactionModel
 
 logger = logging.getLogger(__name__)
 
