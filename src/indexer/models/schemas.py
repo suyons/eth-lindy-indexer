@@ -66,6 +66,24 @@ class TransferEvent(BaseModel):
     def validate_hash(cls, v: str) -> str:
         return validate_hex(v, 64)
 
+class TransferEvent(BaseModel):
+    from_address: Address
+    to_address: Address
+    value: int = Field(ge=0)
+    transaction_hash: Hash32
+    block_number: int = Field(ge=0)
+    log_index: int = Field(ge=0)
+
+    @field_validator("from_address", "to_address", mode="before")
+    @classmethod
+    def validate_addresses(cls, v: str) -> str:
+        return validate_hex(v, 40)
+
+    @field_validator("transaction_hash", mode="before")
+    @classmethod
+    def validate_hash(cls, v: str) -> str:
+        return validate_hex(v, 64)
+
 class TransactionModel(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 

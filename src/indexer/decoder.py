@@ -1,9 +1,7 @@
 import logging
 from typing import Any, Dict, List, Optional
-from eth_utils import event_abi_to_log_topic
 from web3 import Web3
 from web3._utils.events import get_event_data
-from web3.types import LogReceipt
 
 from indexer.models.schemas import TransferEvent
 
@@ -33,12 +31,10 @@ class LogDecoder:
         Decode a single log entry if it matches the ERC-20 Transfer event signature.
         """
         try:
-            # Check if topics exist and if the first topic matches Transfer event
             if not log.get("topics") or log["topics"][0] != TRANSFER_EVENT_TOPIC:
                 return None
 
-            # Use web3 helper to decode log
-            # Ensure required fields for get_event_data are present or defaulted
+            # Prepare log for web3.py helper
             log_for_web3 = dict(log)
             if "transactionIndex" not in log_for_web3:
                 log_for_web3["transactionIndex"] = 0
@@ -48,7 +44,6 @@ class LogDecoder:
                 log_for_web3["address"] = "0x" + "0" * 40
             
             decoded_data = get_event_data(self.w3.codec, self.transfer_abi, log_for_web3)
-            
             args = decoded_data["args"]
             
             tx_hash = log.get("transactionHash")
