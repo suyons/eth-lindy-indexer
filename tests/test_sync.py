@@ -3,13 +3,15 @@ from datetime import datetime, UTC
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from indexer.models.database import Base
-from indexer.models.orm import Block
+from indexer.models.repository import BlockchainRepository
 from indexer.models.schemas import BlockModel
 from indexer.sync import IntegrityGuard, ReorgException
 
 @pytest.fixture
 def db_session():
     engine = create_engine("sqlite:///:memory:")
+    # Ensure tables exist
+    from indexer.models.orm import Block, Transaction, Log
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
@@ -32,47 +34,27 @@ def create_mock_block_model(number, hash_val, parent_hash):
     )
 
 def test_validate_continuity_success(db_session):
+    repo = BlockchainRepository(db_session)
     prev_hash = "0x" + "a" * 64
-    prev_block = Block(
-        number=100,
-        hash=prev_hash,
-        parent_hash="0x" + "0" * 64,
-        timestamp=datetime.now(UTC),
-        miner="0x" + "0" * 40,
-        difficulty=1,
-        total_difficulty=1,
-        size=1,
-        extra_data="0x",
-        gas_limit=1,
-        gas_used=1
-    )
-    db_session.add(prev_block)
+    
+    # Insert previous block via repo
+    repo.insert_block(create_mock_block_model(100, prev_hash, "0x" + "0" * 64))
     db_session.commit()
 
-    guard = IntegrityGuard(db_session)
+    guard = IntegrityGuard(repo)
     new_block = create_mock_block_model(101, "0x" + "b" * 64, prev_hash)
     
     assert guard.validate_block_continuity(new_block) is True
 
 def test_validate_continuity_reorg_detected(db_session):
+    repo = BlockchainRepository(db_session)
     prev_hash = "0x" + "a" * 64
-    prev_block = Block(
-        number=100,
-        hash=prev_hash,
-        parent_hash="0x" + "0" * 64,
-        timestamp=datetime.now(UTC),
-        miner="0x" + "0" * 40,
-        difficulty=1,
-        total_difficulty=1,
-        size=1,
-        extra_data="0x",
-        gas_limit=1,
-        gas_used=1
-    )
-    db_session.add(prev_block)
+    
+    # Insert previous block via repo
+    repo.insert_block(create_mock_block_model(100, prev_hash, "0x" + "0" * 64))
     db_session.commit()
 
-    guard = IntegrityGuard(db_session)
+    guard = IntegrityGuard(repo)
     wrong_parent_hash = "0x" + "f" * 64
     new_block = create_mock_block_model(101, "0x" + "b" * 64, wrong_parent_hash)
     

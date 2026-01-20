@@ -1,6 +1,5 @@
 import logging
-from sqlalchemy.orm import Session
-from indexer.models.orm import Block
+from indexer.models.repository import BlockchainRepository
 from indexer.models.schemas import BlockModel
 
 logger = logging.getLogger(__name__)
@@ -17,8 +16,8 @@ class ReorgException(Exception):
         )
 
 class IntegrityGuard:
-    def __init__(self, db: Session):
-        self.db = db
+    def __init__(self, repository: BlockchainRepository):
+        self.repo = repository
 
     def validate_block_continuity(self, new_block: BlockModel) -> bool:
         """
@@ -31,7 +30,8 @@ class IntegrityGuard:
         """
         previous_block_number = new_block.number - 1
         
-        previous_block = self.db.query(Block).filter(Block.number == previous_block_number).first()
+        # Use Raw SQL via Repository
+        previous_block = self.repo.get_block_by_number(previous_block_number)
         
         if not previous_block:
             logger.info(f"No previous block found in DB for height {previous_block_number}. Skipping continuity check.")
