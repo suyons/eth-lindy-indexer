@@ -33,16 +33,11 @@ graph TD
    cd eth-lindy-indexer
    ```
 
-2. **Create a virtual environment:**
+2. **Setup environment and install dependencies:**
 
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-   ```
-
-3. **Install dependencies (Editable Install):**
-   ```bash
-   pip install -e ".[dev]"
+   uv sync
+   source .venv/bin/activate  # On Windows use `.venv\Scripts\activate`
    ```
 
 ### Configuration
@@ -59,6 +54,11 @@ RETRY_MAX_ATTEMPTS=5
 
 ### Running the API
 
+Using `uv run`:
+```bash
+uv run uvicorn indexer.api:app --reload
+```
+Or with an activated environment:
 ```bash
 uvicorn indexer.api:app --reload
 ```
@@ -71,7 +71,7 @@ The API will be available at `http://localhost:8000`.
 ### Running Tests
 
 ```bash
-pytest
+uv run pytest
 ```
 
 ## 🔒 Data Integrity Features
