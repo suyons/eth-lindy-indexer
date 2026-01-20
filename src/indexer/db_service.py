@@ -1,51 +1,31 @@
 import logging
-from sqlalchemy import delete
-from sqlalchemy.orm import Session
-from indexer.models.orm import Block, Transaction, Log
+from indexer.models.repository import BlockchainRepository
 
 logger = logging.getLogger(__name__)
 
 class DatabaseService:
-    def __init__(self, db: Session):
-        self.db = db
+    def __init__(self, repository: BlockchainRepository):
+        self.repo = repository
 
-    def rollback_to_block(self, target_block_number: int) -> int:
+    def rollback_to_block(self, target_block_number: int):
         """
         Delete all blocks, transactions, and logs starting from target_block_number.
         
         Args:
             target_block_number: The first block number to be deleted.
-            
-        Returns:
-            The number of blocks deleted.
         """
         try:
-            # We rely on SQLAlchemy's cascade delete for Transactions and Logs
-            # defined in the ORM models.
+            logger.info(f"Triggering rollback starting from block height {target_block_number}")
             
-            # Find all blocks to be deleted
-            blocks_to_delete = self.db.query(Block).filter(Block.number >= target_block_number).all()
-            num_deleted = len(blocks_to_delete)
+            # Use Raw SQL via Repository
+            self.repo.rollback_from_height(target_block_number)
             
-            if num_deleted > 0:
-                logger.info(f"Rolling back {num_deleted} blocks starting from {target_block_number}")
-                
-                # We can delete blocks one by one to trigger ORM cascades, 
-                # or use a bulk delete if we handle relations manually.
-                # Since we use 'delete-orphan' cascades on relationships, 
-                # we should delete the Block objects.
-                
-                for block in blocks_to_delete:
-                    self.db.delete(block)
-                
-                self.db.commit()
-                logger.info(f"Successfully rolled back to block {target_block_number - 1}")
-            else:
-                logger.info(f"No blocks found to rollback for height >= {target_block_number}")
+            # Ensure the session associated with the repository is committed
+            self.repo.db.commit()
             
-            return num_deleted
+            logger.info(f"Successfully rolled back database to block {target_block_number - 1}")
             
         except Exception as e:
-            self.db.rollback()
+            self.repo.db.rollback()
             logger.error(f"Error during rollback to block {target_block_number}: {e}")
             raise
