@@ -1,11 +1,9 @@
 import pytest
-from hexbytes import HexBytes
 from indexer.decoder import LogDecoder
 
 def test_decode_transfer_log_success():
     decoder = LogDecoder()
     
-    # Vitalik to 0x1234... Transfer event
     raw_log = {
         "topics": [
             "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
@@ -31,7 +29,6 @@ def test_decode_transfer_log_success():
 def test_decode_transfer_log_invalid_topic():
     decoder = LogDecoder()
     
-    # Some other event topic
     raw_log = {
         "topics": ["0x" + "0" * 64],
         "data": "0x",
