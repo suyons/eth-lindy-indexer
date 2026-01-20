@@ -1,5 +1,6 @@
 import logging
-from indexer.models.repository import BlockchainRepository
+
+from database.repository import BlockchainRepository
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,10 @@
-import pytest
 from datetime import datetime
+
+import pytest
 from pydantic import ValidationError
-from indexer.models.schemas import BlockModel, TransactionModel, LogModel
+
+from domain.schemas import BlockModel, LogModel, TransactionModel
+
 
 def test_block_model_valid():
     valid_block = {

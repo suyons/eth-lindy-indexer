@@ -1,6 +1,7 @@
-import pytest
 from decimal import Decimal
-from indexer.utils.math import wei_to_ether, ether_to_wei, format_ether
+
+from utils.math import ether_to_wei, format_ether, wei_to_ether
+
 
 def test_wei_to_ether_standard():
     assert wei_to_ether(10**18) == Decimal("1")

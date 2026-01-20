@@ -1,9 +1,20 @@
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Index, Integer, String, Text, JSON
+
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from indexer.models.database import Base
+from database.connection import Base
+
 
 class Block(Base):
     __tablename__ = "blocks"

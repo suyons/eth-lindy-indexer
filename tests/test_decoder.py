@@ -1,5 +1,5 @@
-import pytest
-from indexer.decoder import LogDecoder
+from domain.decoder import LogDecoder
+
 
 def test_decode_transfer_log_success():
     decoder = LogDecoder()

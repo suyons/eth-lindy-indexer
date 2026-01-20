@@ -1,10 +1,11 @@
-from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.orm import Session
 from typing import Dict
 
-from indexer.models.database import get_db
-from indexer.models.repository import BlockchainRepository
-from indexer.models.schemas import BlockModel
+from fastapi import Depends, FastAPI, HTTPException
+from sqlalchemy.orm import Session
+
+from database.connection import get_db
+from database.repository import BlockchainRepository
+from domain.schemas import BlockModel
 
 app = FastAPI(title="ETH Lindy Indexer API")
 
@@ -13,7 +14,7 @@ def health_check() -> Dict[str, str]:
     """
     Return the system health status.
     """
-    return {"status": "ok", "service": "eth-lindy-indexer"}
+    return {"status": "ok", "service": "eth-lindy-indexer-core"}
 
 @app.get("/blocks/latest", response_model=BlockModel)
 def get_latest_block(db: Session = Depends(get_db)):
