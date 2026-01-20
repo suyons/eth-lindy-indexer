@@ -19,7 +19,7 @@ def test_high_precision_large_value():
     # Check if we can convert back exactly
     assert ether_to_wei(eth) == max_uint256
     
-    # Check precision
+    # Check precision string representation
     assert format_ether(eth, 18).endswith("584007913129639935")
 
 def test_wei_to_ether_precision():
