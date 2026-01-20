@@ -1,6 +1,6 @@
 # ETH Lindy Indexer
 
-A high-reliability Ethereum event indexer in Python that ensures data integrity through Pydantic validation and handles chain reorganizations via atomic SQL transactions.
+A high-reliability Ethereum event indexer in Python that ensures data integrity through Pydantic validation and handles chain reorganizations via atomic SQL transactions using a **MyBatis-style Raw SQL Repository**.
 
 ## 🏗 System Architecture
 
@@ -10,10 +10,10 @@ graph TD
     Provider --> |Retry Logic| Provider
     Provider --> |Block/Log JSON| Pydantic[Pydantic Validation]
     Pydantic --> |Validated Models| Sync[Sync Service]
-    Sync --> |Parent Hash Check| Integrity[Integrity Guard]
-    Integrity --> |Mismatch Detected| Rollback[Recursive Rollback Service]
-    Integrity --> |Continuous| DB[(PostgreSQL Database)]
+    Sync --> |Continuity Check| Repo[Raw SQL Repository]
+    Repo --> |Raw SQL / text| DB[(PostgreSQL Database)]
     DB --> |Persistence| API[FastAPI Service]
+    API --> |Latest Block| Repo
     API --> |JSON Responses| User[End User]
 ```
 
@@ -27,23 +27,22 @@ graph TD
 ### Installation
 
 1. **Clone the repository:**
-
    ```bash
-   git clone https://github.com/suyons/eth-lindy-indexer.git
+   git clone https://github.com/your-repo/eth-lindy-indexer.git
    cd eth-lindy-indexer
    ```
 
-2. **Setup environment and install dependencies:**
-
+2. **Setup Environment:**
    ```bash
-   uv sync
-   source .venv/bin/activate  # On Windows use `.venv\Scripts\activate`
+   # Using uv (recommended)
+   uv venv
+   source .venv/bin/activate
+   uv pip install -e ".[dev]"
    ```
 
 ### Configuration
 
-Create a `.env` file in the root directory based on `.env.example`:
-
+Create a `.env` file based on `.env.example`:
 ```env
 RPC_URL=https://eth-mainnet.g.alchemy.com/v2/your-api-key
 DATABASE_URL=postgresql://user:password@localhost:5432/lindy_indexer
@@ -53,30 +52,18 @@ RETRY_MAX_ATTEMPTS=5
 ## 🛠 Usage
 
 ### Running the API
-
-Using `uv run`:
-```bash
-uv run uvicorn indexer.api:app --reload
-```
-Or with an activated environment:
 ```bash
 uvicorn indexer.api:app --reload
 ```
 
-The API will be available at `http://localhost:8000`.
-
-- Health Check: `GET /health`
-- Latest Block: `GET /blocks/latest`
-
 ### Running Tests
-
 ```bash
-uv run pytest
+pytest
 ```
 
-## 🔒 Data Integrity Features
+## 🔒 Data Integrity & Implementation Style
 
-- **Pydantic Validation:** All data from the blockchain is validated against strict schemas before being processed.
-- **Integrity Guard:** Every new block's `parent_hash` is verified against the database to detect chain reorganizations.
-- **Atomic Rollback:** If a reorg is detected, the system performs an atomic recursive rollback to the last known consistent block.
-- **High-Precision Math:** Wei values are handled using Python's `Decimal` type with 80 digits of precision to avoid floating-point errors.
+- **MyBatis-Style Repository:** Direct control over SQL performance and clarity using `sqlalchemy.text()` and Pydantic for result mapping.
+- **Pydantic Validation:** Strict schema enforcement for all blockchain data.
+- **Integrity Guard:** Parent hash verification against the database to detect reorgs.
+- **High-Precision Math:** 80-digit decimal precision for all Wei calculations.
