@@ -1,10 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
-from typing import Dict, Any
+from typing import Dict
 
 from indexer.models.database import get_db
-from indexer.models.orm import Block
+from indexer.models.repository import BlockchainRepository
 from indexer.models.schemas import BlockModel
 
 app = FastAPI(title="ETH Lindy Indexer API")
@@ -19,9 +18,10 @@ def health_check() -> Dict[str, str]:
 @app.get("/blocks/latest", response_model=BlockModel)
 def get_latest_block(db: Session = Depends(get_db)):
     """
-    Return the highest block number and hash currently synced in the DB.
+    Return the highest block number and hash currently synced in the DB using Raw SQL.
     """
-    latest_block = db.query(Block).order_by(desc(Block.number)).first()
+    repo = BlockchainRepository(db)
+    latest_block = repo.get_latest_block()
     if not latest_block:
         raise HTTPException(status_code=404, detail="No blocks found in database")
     return latest_block
