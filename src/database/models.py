@@ -1,16 +1,8 @@
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import (
-    JSON,
-    BigInteger,
-    DateTime,
-    ForeignKey,
-    Index,
-    Integer,
-    String,
-    Text,
-)
+from sqlalchemy import (JSON, BigInteger, DateTime, ForeignKey, Index, Integer,
+                        String, Text)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.connection import Base
@@ -68,6 +60,24 @@ class Log(Base):
     data: Mapped[str] = mapped_column(Text, nullable=False)
     topics: Mapped[List[str]] = mapped_column(JSON, nullable=False)
     block_number: Mapped[int] = mapped_column(BigInteger, ForeignKey("blocks.number"), nullable=False, index=True)
+    block_hash: Mapped[str] = mapped_column(String(66), nullable=False, index=True)
+
+    block: Mapped["Block"] = relationship(back_populates="logs")
+    transaction: Mapped["Transaction"] = relationship(back_populates="logs")
+
+    __table_args__ = (
+        Index("idx_logs_transaction_hash", "transaction_hash"),
+        Index("idx_logs_block_number", "block_number"),
+    )
+    transaction_hash: Mapped[str] = mapped_column(
+        String(66), ForeignKey("transactions.hash"), nullable=False, index=True
+    )
+    address: Mapped[str] = mapped_column(String(42), nullable=False, index=True)
+    data: Mapped[str] = mapped_column(Text, nullable=False)
+    topics: Mapped[List[str]] = mapped_column(JSON, nullable=False)
+    block_number: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("blocks.number"), nullable=False, index=True
+    )
     block_hash: Mapped[str] = mapped_column(String(66), nullable=False, index=True)
 
     block: Mapped["Block"] = relationship(back_populates="logs")

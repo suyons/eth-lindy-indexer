@@ -1,6 +1,6 @@
 # ETH Lindy Indexer
 
-A high-reliability Ethereum event indexer in Python that ensures data integrity through Pydantic validation and handles chain reorganizations via atomic SQL transactions using a **MyBatis-style Raw SQL Repository**.
+A high-reliability Ethereum event indexer in Python that ensures data integrity through Pydantic validation and handles chain reorganizations via atomic SQL transactions using a **Raw SQL Repository**.
 
 ## 🏗 System Architecture
 
@@ -27,6 +27,7 @@ graph TD
 ### Installation
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/your-repo/eth-lindy-indexer.git
    cd eth-lindy-indexer
@@ -43,6 +44,7 @@ graph TD
 ### Configuration
 
 Create a `.env` file based on `.env.example`:
+
 ```env
 RPC_URL=https://eth-mainnet.g.alchemy.com/v2/your-api-key
 DATABASE_URL=postgresql://user:password@localhost:5432/lindy_indexer
@@ -52,18 +54,20 @@ RETRY_MAX_ATTEMPTS=5
 ## 🛠 Usage
 
 ### Running the API
+
 ```bash
 uvicorn indexer.api:app --reload
 ```
 
 ### Running Tests
+
 ```bash
 pytest
 ```
 
 ## 🔒 Data Integrity & Implementation Style
 
-- **MyBatis-Style Repository:** Direct control over SQL performance and clarity using `sqlalchemy.text()` and Pydantic for result mapping.
+- **Raw SQL Repository:** Direct control over SQL performance and clarity using `sqlalchemy.text()` and Pydantic for result mapping.
 - **Pydantic Validation:** Strict schema enforcement for all blockchain data.
 - **Integrity Guard:** Parent hash verification against the database to detect reorgs.
 - **High-Precision Math:** 80-digit decimal precision for all Wei calculations.

@@ -9,6 +9,7 @@ HEX_64_PATTERN = re.compile(r"^0x[a-fA-F0-9]{64}$")
 HEX_40_PATTERN = re.compile(r"^0x[a-fA-F0-9]{40}$")
 HEX_ANY_PATTERN = re.compile(r"^0x[a-fA-F0-9]*$")
 
+
 def validate_hex(v: str, length: Optional[int] = None) -> str:
     if not isinstance(v, str) or not v.startswith("0x"):
         raise ValueError("Hex string must start with 0x")
@@ -18,10 +19,12 @@ def validate_hex(v: str, length: Optional[int] = None) -> str:
         raise ValueError("Invalid hex characters")
     return v.lower()
 
+
 # Custom Types for type hinting and basic pattern validation
 Hash32 = Annotated[str, Field(pattern=r"^0x[a-fA-F0-9]{64}$")]
 Address = Annotated[str, Field(pattern=r"^0x[a-fA-F0-9]{40}$")]
 HexData = Annotated[str, Field(pattern=r"^0x[a-fA-F0-9]*$")]
+
 
 class LogModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -49,23 +52,6 @@ class LogModel(BaseModel):
     def validate_topics(cls, v: List[str]) -> List[str]:
         return [validate_hex(t, 64) for t in v]
 
-class TransferEvent(BaseModel):
-    from_address: Address
-    to_address: Address
-    value: int = Field(ge=0)
-    transaction_hash: Hash32
-    block_number: int = Field(ge=0)
-    log_index: int = Field(ge=0)
-
-    @field_validator("from_address", "to_address", mode="before")
-    @classmethod
-    def validate_addresses(cls, v: str) -> str:
-        return validate_hex(v, 40)
-
-    @field_validator("transaction_hash", mode="before")
-    @classmethod
-    def validate_hash(cls, v: str) -> str:
-        return validate_hex(v, 64)
 
 class TransferEvent(BaseModel):
     from_address: Address
@@ -84,6 +70,26 @@ class TransferEvent(BaseModel):
     @classmethod
     def validate_hash(cls, v: str) -> str:
         return validate_hex(v, 64)
+
+
+class TransferEvent(BaseModel):
+    from_address: Address
+    to_address: Address
+    value: int = Field(ge=0)
+    transaction_hash: Hash32
+    block_number: int = Field(ge=0)
+    log_index: int = Field(ge=0)
+
+    @field_validator("from_address", "to_address", mode="before")
+    @classmethod
+    def validate_addresses(cls, v: str) -> str:
+        return validate_hex(v, 40)
+
+    @field_validator("transaction_hash", mode="before")
+    @classmethod
+    def validate_hash(cls, v: str) -> str:
+        return validate_hex(v, 64)
+
 
 class TransactionModel(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
@@ -111,6 +117,7 @@ class TransactionModel(BaseModel):
         if v is None:
             return None
         return validate_hex(v, 40)
+
 
 class BlockModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)

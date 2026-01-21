@@ -20,6 +20,7 @@ def db_session():
     yield session
     session.close()
 
+
 def create_mock_block_model(number, hash_val, parent_hash):
     return BlockModel(
         number=number,
@@ -32,26 +33,28 @@ def create_mock_block_model(number, hash_val, parent_hash):
         size=1,
         extra_data="0x",
         gas_limit=1,
-        gas_used=1
+        gas_used=1,
     )
+
 
 def test_validate_continuity_success(db_session):
     repo = BlockchainRepository(db_session)
     prev_hash = "0x" + "a" * 64
-    
+
     # Insert previous block via repo
     repo.insert_block(create_mock_block_model(100, prev_hash, "0x" + "0" * 64))
     db_session.commit()
 
     guard = IntegrityGuard(repo)
     new_block = create_mock_block_model(101, "0x" + "b" * 64, prev_hash)
-    
+
     assert guard.validate_block_continuity(new_block) is True
+
 
 def test_validate_continuity_reorg_detected(db_session):
     repo = BlockchainRepository(db_session)
     prev_hash = "0x" + "a" * 64
-    
+
     # Insert previous block via repo
     repo.insert_block(create_mock_block_model(100, prev_hash, "0x" + "0" * 64))
     db_session.commit()
@@ -59,10 +62,10 @@ def test_validate_continuity_reorg_detected(db_session):
     guard = IntegrityGuard(repo)
     wrong_parent_hash = "0x" + "f" * 64
     new_block = create_mock_block_model(101, "0x" + "b" * 64, wrong_parent_hash)
-    
+
     with pytest.raises(ReorgException) as excinfo:
         guard.validate_block_continuity(new_block)
-    
+
     assert excinfo.value.block_number == 101
     assert excinfo.value.expected_parent_hash == prev_hash
     assert excinfo.value.actual_parent_hash == wrong_parent_hash
