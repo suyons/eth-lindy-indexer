@@ -29,7 +29,7 @@ graph TD
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/your-repo/eth-lindy-indexer.git
+   git clone https://github.com/suyons/eth-lindy-indexer.git
    cd eth-lindy-indexer
    ```
 
@@ -56,7 +56,7 @@ RETRY_MAX_ATTEMPTS=5
 ### Running the API
 
 ```bash
-uvicorn indexer.api:app --reload
+uv run uvicorn api.router:app --reload
 ```
 
 ### Running Tests
