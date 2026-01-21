@@ -9,12 +9,14 @@ from domain.schemas import BlockModel
 
 app = FastAPI(title="ETH Lindy Indexer API")
 
+
 @app.get("/health")
 def health_check() -> Dict[str, str]:
     """
     Return the system health status.
     """
     return {"status": "ok", "service": "eth-lindy-indexer-core"}
+
 
 @app.get("/blocks/latest", response_model=BlockModel)
 def get_latest_block(db: Session = Depends(get_db)):

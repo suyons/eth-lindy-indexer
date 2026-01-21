@@ -20,7 +20,10 @@ ERC20_TRANSFER_ABI = {
     "type": "event",
 }
 
-TRANSFER_EVENT_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+TRANSFER_EVENT_TOPIC = (
+    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+)
+
 
 class LogDecoder:
     def __init__(self):
@@ -43,10 +46,12 @@ class LogDecoder:
                 log_for_web3["blockHash"] = "0x" + "0" * 64
             if "address" not in log_for_web3:
                 log_for_web3["address"] = "0x" + "0" * 40
-            
-            decoded_data = get_event_data(self.w3.codec, self.transfer_abi, log_for_web3)
+
+            decoded_data = get_event_data(
+                self.w3.codec, self.transfer_abi, log_for_web3
+            )
             args = decoded_data["args"]
-            
+
             tx_hash = log.get("transactionHash")
             if tx_hash:
                 tx_hash = tx_hash if isinstance(tx_hash, str) else tx_hash.hex()
@@ -59,7 +64,7 @@ class LogDecoder:
                 value=args["value"],
                 transaction_hash=tx_hash,
                 block_number=log.get("blockNumber", 0),
-                log_index=log.get("logIndex", 0)
+                log_index=log.get("logIndex", 0),
             )
         except Exception as e:
             logger.error(f"Failed to decode log: {e}")

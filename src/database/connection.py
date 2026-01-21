@@ -17,8 +17,10 @@ engine = create_engine(
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 class Base(DeclarativeBase):
     pass
+
 
 def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
