@@ -1,3 +1,5 @@
+import json
+import logging
 from unittest.mock import patch
 
 import pytest
@@ -5,6 +7,9 @@ from web3.exceptions import Web3Exception
 
 from core.config import settings
 from core.provider import BlockchainProvider
+
+# Setup basic logging for inspector
+logging.basicConfig(level=logging.INFO)
 
 
 @pytest.fixture
@@ -57,3 +62,39 @@ def test_get_transaction_retry(provider):
             tx = provider.get_transaction("0xabc")
             assert tx["hash"] == "0xabc"
             assert provider.w3.eth.get_transaction.call_count == 2
+
+
+def inspect_latest_block():
+    """Diagnostic tool to check RPC node response."""
+    from web3 import Web3
+
+    public_url = "https://ethereum-rpc.publicnode.com"
+    w3 = Web3(Web3.HTTPProvider(public_url))
+
+    print(f"Connecting to RPC: {public_url}...")
+
+    # Fetch the latest block
+    print("Fetching latest block raw data...")
+    raw_block = w3.eth.get_block("latest", full_transactions=False)
+
+    # Convert Web3 AttributeDict to a regular dict for JSON printing
+    def serializable(obj):
+        if hasattr(obj, "hex"):
+            return obj.hex()
+        if isinstance(obj, bytes):
+            return obj.hex()
+        if hasattr(obj, "items"):
+            return {k: serializable(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple, set)):
+            return [serializable(i) for i in obj]
+        return obj
+
+    clean_block = serializable(dict(raw_block))
+
+    print("\n=== RAW RPC BLOCK RESPONSE ===")
+    print(json.dumps(clean_block, indent=4))
+    print("==============================\n")
+
+
+if __name__ == "__main__":
+    inspect_latest_block()
