@@ -1,4 +1,5 @@
 import logging
+import json
 from typing import Optional
 
 from sqlalchemy import text
@@ -12,13 +13,14 @@ logger = logging.getLogger(__name__)
 class BlockchainRepository:
     """
     Raw SQL Repository using Raw SQL via SQLAlchemy Core.
-      This provides direct control over SQL performance and clarity.
+    This provides direct control over SQL performance and clarity.
     """
 
     def __init__(self, db: Session):
         self.db = db
 
     def insert_block(self, block: BlockModel):
+        logger.info(f"Executing Raw SQL: INSERT INTO blocks (number={block.number})")
         sql = text(
             """
             INSERT INTO blocks (
@@ -33,9 +35,12 @@ class BlockchainRepository:
             ON CONFLICT (number) DO NOTHING
         """
         )
-        self.db.execute(sql, block.model_dump())
+        self.db.execute(sql, block.model_dump(by_alias=False))
 
     def get_latest_block(self) -> Optional[BlockModel]:
+        logger.debug(
+            "Executing Raw SQL: SELECT * FROM blocks ORDER BY number DESC LIMIT 1"
+        )
         sql = text("SELECT * FROM blocks ORDER BY number DESC LIMIT 1")
         result = self.db.execute(sql).mappings().first()
         if result:
@@ -43,6 +48,7 @@ class BlockchainRepository:
         return None
 
     def get_block_by_number(self, number: int) -> Optional[BlockModel]:
+        logger.debug(f"Executing Raw SQL: SELECT * FROM blocks WHERE number = {number}")
         sql = text("SELECT * FROM blocks WHERE number = :number")
         result = self.db.execute(sql, {"number": number}).mappings().first()
         if result:
@@ -50,6 +56,7 @@ class BlockchainRepository:
         return None
 
     def insert_transaction(self, tx: TransactionModel):
+        logger.info(f"Executing Raw SQL: INSERT INTO transactions (hash={tx.hash})")
         sql = text(
             """
             INSERT INTO transactions (
@@ -62,13 +69,12 @@ class BlockchainRepository:
             ON CONFLICT (hash) DO NOTHING
         """
         )
-        # TransactionModel uses 'from' alias, so we use model_dump(by_alias=False)
-        # or map manually if needed. Pydantic v2 handles this well.
-        data = tx.model_dump()
-        # Ensure 'from' is mapped to 'from_address' if not using aliases in SQL
-        self.db.execute(sql, data)
+        self.db.execute(sql, tx.model_dump(by_alias=False))
 
     def insert_log(self, log: LogModel):
+        logger.info(
+            f"Executing Raw SQL: INSERT INTO logs (log_index={log.log_index}, tx_hash={log.transaction_hash})"
+        )
         sql = text(
             """
             INSERT INTO logs (
@@ -80,16 +86,16 @@ class BlockchainRepository:
             )
         """
         )
-        data = log.model_dump()
-        # For SQLite/JSON handling, we might need to serialize topics
-        import json
-
-        data["topics"] = json.dumps(data["topics"])
+        data = log.model_dump(by_alias=False)
+        if isinstance(data["topics"], list):
+            data["topics"] = json.dumps(data["topics"])
         self.db.execute(sql, data)
 
     def rollback_from_height(self, block_number: int):
         """Delete all data from a certain height onwards (Atomic Reorg Handling)."""
-        # SQLAlchemy Session handles the transaction atomicity
+        logger.warning(
+            f"Executing Raw SQL: DELETE FROM ... WHERE block_number >= {block_number}"
+        )
         self.db.execute(
             text("DELETE FROM logs WHERE block_number >= :num"), {"num": block_number}
         )

@@ -6,8 +6,10 @@ from core.sync import IntegrityGuard, ReorgException
 from core.db_service import DatabaseService
 from database.repository import BlockchainRepository
 from domain.schemas import BlockModel, TransactionModel
+from domain.decoder import LogDecoder
 
 logger = logging.getLogger(__name__)
+
 
 class SyncEngine:
     def __init__(self, db: Session, provider: BlockchainProvider):
@@ -16,37 +18,62 @@ class SyncEngine:
         self.repo = BlockchainRepository(db)
         self.guard = IntegrityGuard(self.repo)
         self.db_service = DatabaseService(self.repo)
+        self.decoder = LogDecoder()
 
-    def get_start_block(self, default_start: int = 0) -> int:
+    def get_start_block(self, default_start: int = None) -> int:
         """Determine where to start syncing."""
         latest_in_db = self.repo.get_latest_block()
         if latest_in_db:
             return latest_in_db.number + 1
+
+        # If DB is empty, start from current tip minus a small buffer
+        if default_start is None:
+            rpc_latest = self.provider.w3.eth.block_number
+            return rpc_latest - 10
         return default_start
 
     def sync_block(self, block_number: int):
-        """Fetch, validate, and save a single block."""
+        """Fetch, validate, and save a single block and its logs."""
         try:
             logger.info(f"Syncing block {block_number}...")
-            
+
             # 1. Fetch from RPC
             raw_block = self.provider.get_block(block_number, full_transactions=True)
             block_model = BlockModel.model_validate(dict(raw_block))
-            
+
             # 2. Check Continuity (Reorg Detection)
             self.guard.validate_block_continuity(block_model)
-            
-            # 3. Save to DB (Atomic)
+
+            # 3. Save Block
             self.repo.insert_block(block_model)
-            
-            # Optional: Save transactions
-            for tx in raw_block.get('transactions', []):
+
+            # 4. Save Transactions
+            for tx in raw_block.get("transactions", []):
                 tx_model = TransactionModel.model_validate(dict(tx))
                 self.repo.insert_transaction(tx_model)
-            
+
+            # 5. Fetch and Save Logs (ERC-20 Transfers)
+            # We filter for the specific block number
+            logs = self.provider.get_logs(
+                {"fromBlock": block_number, "toBlock": block_number}
+            )
+
+            for log in logs:
+                # We save all raw logs first
+                from domain.schemas import LogModel
+
+                try:
+                    log_model = LogModel.model_validate(dict(log))
+                    self.repo.insert_log(log_model)
+                except Exception as e:
+                    logger.debug(f"Skipping log validation for non-compliant log: {e}")
+                    continue
+
             self.db.commit()
-            logger.info(f"Successfully indexed block {block_number}")
-            
+            logger.info(
+                f"Successfully indexed block {block_number} with {len(raw_block.get('transactions', []))} txs and {len(logs)} logs"
+            )
+
         except ReorgException as e:
             logger.warning(f"Reorg detected: {e}. Rolling back...")
             # Rollback to the previous safe block
@@ -60,21 +87,23 @@ class SyncEngine:
 
     def run(self, start_block: int = None, poll_interval: int = 12):
         """Main indexing loop."""
-        current_height = start_block if start_block is not None else self.get_start_block()
-        
+        current_height = (
+            start_block if start_block is not None else self.get_start_block()
+        )
+
         logger.info(f"Starting sync engine from block {current_height}")
-        
+
         while True:
             try:
                 rpc_latest = self.provider.w3.eth.block_number
-                
+
                 if current_height <= rpc_latest:
                     self.sync_block(current_height)
                     current_height += 1
                 else:
                     logger.debug(f"Reached chain tip ({rpc_latest}). Waiting...")
                     time.sleep(poll_interval)
-                    
+
             except ReorgException:
                 # Re-calculate height after rollback
                 current_height = self.get_start_block()
