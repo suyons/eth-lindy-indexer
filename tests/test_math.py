@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from utils.math import ether_to_wei, format_ether, wei_to_ether
+from utils.blockchain_math import ether_to_wei, format_ether, wei_to_ether
 
 
 def test_wei_to_ether_standard():
