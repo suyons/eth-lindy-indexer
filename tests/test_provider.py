@@ -67,8 +67,9 @@ def test_get_transaction_retry(provider):
 def inspect_latest_block():
     """Diagnostic tool to check RPC node response."""
     from web3 import Web3
+    from core.config import settings
 
-    public_url = "https://ethereum-rpc.publicnode.com"
+    public_url = settings.rpc_url
     w3 = Web3(Web3.HTTPProvider(public_url))
 
     print(f"Connecting to RPC: {public_url}...")
