@@ -28,35 +28,36 @@ graph TD
 
 1. **Clone the repository:**
 
-   ```bash
-   git clone https://github.com/suyons/eth-lindy-indexer.git
-   cd eth-lindy-indexer
-   ```
+```bash
+git clone https://github.com/suyons/eth-lindy-indexer.git
+cd eth-lindy-indexer
+```
 
 2. **Setup Environment:**
-   ```bash
-   # Using uv (recommended)
-   uv venv
-   source .venv/bin/activate
-   uv pip install -e ".[dev]"
-   ```
+
+```bash
+# Using uv (recommended)
+uv venv
+source .venv/bin/activate
+uv pip install -e ".[dev]"
+```
 
 ### Configuration
 
 Create a `.env` file based on `.env.example`:
 
 ```env
-RPC_URL=https://eth-mainnet.g.alchemy.com/v2/your-api-key
+RPC_URL=https://ethereum-rpc.publicnode.com
 DATABASE_URL=postgresql://user:password@localhost:5432/lindy_indexer
 RETRY_MAX_ATTEMPTS=5
 ```
 
 ## 🛠 Usage
 
-### Running the API
+### Starting the Indexer
 
 ```bash
-uv run uvicorn api.router:app --reload
+uv run start
 ```
 
 ### Running Tests
