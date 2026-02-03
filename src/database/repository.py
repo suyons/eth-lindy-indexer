@@ -20,7 +20,7 @@ class BlockchainRepository:
         self.db = db
 
     def insert_block(self, block: BlockModel):
-        logger.info(f"Executing Raw SQL: INSERT INTO blocks (number={block.number})")
+        logger.debug(f"Executing Raw SQL: INSERT INTO blocks (number={block.number})")
         sql = text(
             """
             INSERT INTO blocks (
@@ -56,7 +56,7 @@ class BlockchainRepository:
         return None
 
     def insert_transaction(self, tx: TransactionModel):
-        logger.info(f"Executing Raw SQL: INSERT INTO transactions (hash={tx.hash})")
+        logger.debug(f"Executing Raw SQL: INSERT INTO transactions (hash={tx.hash})")
         sql = text(
             """
             INSERT INTO transactions (
@@ -72,7 +72,7 @@ class BlockchainRepository:
         self.db.execute(sql, tx.model_dump(by_alias=False))
 
     def insert_log(self, log: LogModel):
-        logger.info(
+        logger.debug(
             f"Executing Raw SQL: INSERT INTO logs (log_index={log.log_index}, tx_hash={log.transaction_hash})"
         )
         sql = text(
