@@ -19,7 +19,8 @@ logger = logging.getLogger(__name__)
 class BlockchainProvider:
     def __init__(self, rpc_url: Optional[str] = None):
         self.rpc_url = rpc_url or settings.rpc_url
-        self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
+        # Add a 30 second timeout to prevent infinite hanging
+        self.w3 = Web3(Web3.HTTPProvider(self.rpc_url, request_kwargs={'timeout': 30}))
         
     def is_connected(self) -> bool:
         return self.w3.is_connected()

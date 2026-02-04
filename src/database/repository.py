@@ -1,26 +1,28 @@
-import logging
 import json
-from typing import Optional
+import logging
+from typing import List, Optional
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from domain.schemas import BlockModel, LogModel, TransactionModel
+from domain.schemas import BlockModel
 
 logger = logging.getLogger(__name__)
 
 
 class BlockchainRepository:
     """
-    Raw SQL Repository using Raw SQL via SQLAlchemy Core.
-    This provides direct control over SQL performance and clarity.
+    High-performance Raw SQL Repository.
+    Uses optimized multi-row insertions for maximum throughput.
     """
 
     def __init__(self, db: Session):
         self.db = db
 
-    def insert_block(self, block: BlockModel):
-        logger.debug(f"Executing Raw SQL: INSERT INTO blocks (number={block.number})")
+    def insert_blocks_bulk(self, blocks: List[BlockModel]):
+        if not blocks:
+            return
+        logger.debug(f"Executing Raw SQL: Bulk INSERT {len(blocks)} blocks")
         sql = text(
             """
             INSERT INTO blocks (
@@ -35,12 +37,9 @@ class BlockchainRepository:
             ON CONFLICT (number) DO NOTHING
         """
         )
-        self.db.execute(sql, block.model_dump(by_alias=False))
+        self.db.execute(sql, [b.model_dump(by_alias=False) for b in blocks])
 
     def get_latest_block(self) -> Optional[BlockModel]:
-        logger.debug(
-            "Executing Raw SQL: SELECT * FROM blocks ORDER BY number DESC LIMIT 1"
-        )
         sql = text("SELECT * FROM blocks ORDER BY number DESC LIMIT 1")
         result = self.db.execute(sql).mappings().first()
         if result:
@@ -48,15 +47,19 @@ class BlockchainRepository:
         return None
 
     def get_block_by_number(self, number: int) -> Optional[BlockModel]:
-        logger.debug(f"Executing Raw SQL: SELECT * FROM blocks WHERE number = {number}")
         sql = text("SELECT * FROM blocks WHERE number = :number")
         result = self.db.execute(sql, {"number": number}).mappings().first()
         if result:
             return BlockModel.model_validate(dict(result))
         return None
 
-    def insert_transaction(self, tx: TransactionModel):
-        logger.debug(f"Executing Raw SQL: INSERT INTO transactions (hash={tx.hash})")
+    def insert_transactions_bulk(self, transactions_data: List[dict]):
+        """Fastest multi-row insert for transactions."""
+        if not transactions_data:
+            return
+        logger.debug(
+            f"Executing Raw SQL: Bulk INSERT {len(transactions_data)} transactions"
+        )
         sql = text(
             """
             INSERT INTO transactions (
@@ -69,12 +72,14 @@ class BlockchainRepository:
             ON CONFLICT (hash) DO NOTHING
         """
         )
-        self.db.execute(sql, tx.model_dump(by_alias=False))
+        # SQLAlchemy + Psycopg2 will optimize this into a single efficient command
+        self.db.execute(sql, transactions_data)
 
-    def insert_log(self, log: LogModel):
-        logger.debug(
-            f"Executing Raw SQL: INSERT INTO logs (log_index={log.log_index}, tx_hash={log.transaction_hash})"
-        )
+    def insert_logs_bulk(self, logs_data: List[dict]):
+        """Fastest multi-row insert for logs."""
+        if not logs_data:
+            return
+        logger.debug(f"Executing Raw SQL: Bulk INSERT {len(logs_data)} logs")
         sql = text(
             """
             INSERT INTO logs (
@@ -82,14 +87,17 @@ class BlockchainRepository:
                 topics, block_number, block_hash
             ) VALUES (
                 :log_index, :transaction_hash, :address, :data, 
-                :topics, :block_number, :block_hash
+                CAST(:topics AS jsonb), :block_number, :block_hash
             )
         """
         )
-        data = log.model_dump(by_alias=False)
-        if isinstance(data["topics"], list):
-            data["topics"] = json.dumps(data["topics"])
-        self.db.execute(sql, data)
+
+        # Ensure topics are serialized to JSON strings for PostgreSQL jsonb column
+        for data in logs_data:
+            if "topics" in data and isinstance(data["topics"], (list, dict)):
+                data["topics"] = json.dumps(data["topics"])
+
+        self.db.execute(sql, logs_data)
 
     def rollback_from_height(self, block_number: int):
         """Delete all data from a certain height onwards (Atomic Reorg Handling)."""

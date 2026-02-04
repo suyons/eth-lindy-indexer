@@ -11,6 +11,9 @@ from core.config import settings
 # In a production Postgres setup, SQLAlchemy will use its default QueuePool.
 engine = create_engine(
     settings.database_url,
+    pool_size=20,
+    max_overflow=10,
+    pool_pre_ping=True,
     poolclass=StaticPool if settings.database_url.startswith("sqlite") else None,
 )
 
